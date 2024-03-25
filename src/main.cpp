@@ -1,5 +1,5 @@
 #include <iostream>
-#include <opencv2/videoio.hpp>
+#include "tracking.hpp"
 
 int main(int argc, char* argv[])
 {
@@ -14,6 +14,19 @@ int main(int argc, char* argv[])
     if (!video.isOpened()) {
         std::cerr << "Error: Couldn't open file " << argv[1];
         return -1;
+    }
+
+    switch (Track(video)) {
+        case ERROR_INTERRUPT:
+            std::cerr
+                << "main: Tracking interrupted by error." << std::endl;
+            return -1;
+        case USER_INTERRUPT:
+            std::cerr << "main: Tracking interrupted by user." << std::endl;
+            return -1;
+        case EOF_REACHED:
+            std::cout << "main: Tracking finished, EOF reached." << std::endl;
+            break;
     }
 
     return 0;
