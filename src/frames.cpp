@@ -19,3 +19,11 @@ void DownsampleFrame(Mat* downsampled, Mat& frame, int factor)
 	imshow("Downsampled", *downsampled);
 	#endif
 }
+
+void FrameColorMask(Mat* mask, Mat& frame, Scalar lowerb, Scalar upperb)
+{
+	inRange(frame, lowerb, upperb, *mask);
+	#ifdef TR_SHOW_MASK
+	imshow("Mask", *mask);
+	#endif
+}
