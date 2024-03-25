@@ -1,11 +1,5 @@
 #pragma once
 #include <opencv2/videoio.hpp>
-#include <opencv2/highgui.hpp>
-
-// Choose what should be visible in debug
-#ifdef _DEBUG
-	#define TR_SHOW_FRAMES
-#endif
 
 // Track return codes
 #define EOF_REACHED 0
