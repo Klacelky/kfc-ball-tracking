@@ -15,7 +15,7 @@ void CropFrame(Mat* cropped, Mat& frame, int left, int right, int top, int bot)
 void DownsampleFrame(Mat* downsampled, Mat& frame, int factor)
 {
 	resize(frame, *downsampled, Size(), 1.0 / factor,  1.0 / factor, INTER_NEAREST);
-	#ifdef TR_SHOW_DOWNSAPLED
+	#ifdef TR_SHOW_DOWNSAMPLED
 	imshow("Downsampled", *downsampled);
 	#endif
 }
