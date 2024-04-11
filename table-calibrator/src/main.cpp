@@ -1,3 +1,4 @@
+#include "headers/calibration.hpp"
 #include <iostream>
 #include <opencv2/videoio.hpp>
 #include <opencv2/highgui.hpp>
@@ -45,16 +46,7 @@ int main(int argc, char* argv[])
         return 1;
     }
 
-    cv::Mat frame;
-
-    while (true)
-    {
-        if (!video.read(frame)) {
-            continue;
-        }
-        cv::imshow("Video", frame);
-        cv::waitKey(10);
-    }
+    start_calibration(video);
 
     video.release();
 
