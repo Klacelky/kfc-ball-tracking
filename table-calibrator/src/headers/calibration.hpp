@@ -12,6 +12,4 @@ void mouse_controller(int event, int x, int y, int flags, void* userdata);
 
 void get_frame(cv::VideoCapture& video, cv::Mat& frame);
 
-void draw_points(cv::Mat& frame, cv::Point2f points[], int count);
-
 void draw_help(cv::Mat& frame, const char* str);

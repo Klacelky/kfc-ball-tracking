@@ -4,19 +4,19 @@
 #include <opencv2/imgproc.hpp>
 #include <iostream>
 
-#define WINDOW_NAME         "Calibration"
-#define SAVE_FILE_PATH      "calib-data"
+#define WINDOW_NAME     "Calibration"
+#define SAVE_FILE_PATH  "calib-data"
+#define HELP_START      "[L] load  [ENTER] start calibration"
+#define HELP_RESULT     "[R] restart selection  [S] save  [Q] quit"
+#define HELP_SELECTION1 "[R] restart selection  [LMB] select TOP LEFT"
+#define HELP_SELECTION2 "[R] restart selection  [LMB] select TOP RIGHT"
+#define HELP_SELECTION3 "[R] restart selection  [LMB] select BOTTOM LEFT"
+#define HELP_SELECTION4 "[R] restart selection  [LMB] select BOTTOM RIGHT"
+#define HELP_CIN        "Enter input into console!"
 
 void start_calibration(cv::VideoCapture video)
 {
-    const char* const HELP[7] = { "[R] restart selection  [LMB] select TOP LEFT",
-                                  "[R] restart selection  [LMB] select TOP RIGHT",
-                                  "[R] restart selection  [LMB] select BOTTOM LEFT",
-                                  "[R] restart selection  [LMB] select BOTTOM RIGHT",
-                                  "[R] restart selection  [ENTER] continue",
-                                  "[R] restart selection  [S] save  [Q] quit",
-                                  "[L] load  [ENTER] start calibration" };
-
+    const char* const HELP_SELECT[4] = { HELP_SELECTION1, HELP_SELECTION2, HELP_SELECTION3, HELP_SELECTION4 };
     const cv::Scalar RED(0, 0, 255);
 
     cv::Mat frame;
@@ -32,7 +32,7 @@ void start_calibration(cv::VideoCapture video)
 main_selection:
     while (true) {
         get_frame(video, frame);
-        draw_help(frame, HELP[6]);
+        draw_help(frame, HELP_START);
         cv::imshow(WINDOW_NAME, frame);
         int key = cv::waitKey(10);
         if ('l' == key) {
@@ -47,7 +47,7 @@ main_selection:
 point_selection:
     mdata.clicked = false;
     for (int i = 0; i < 4; i++) {
-        draw_help(frame, HELP[i]);
+        draw_help(frame, HELP_SELECT[i]);
         cv::imshow(WINDOW_NAME, frame);
         while (!mdata.clicked) {
             if ('r' == cv::waitKey(10)) {
@@ -60,7 +60,7 @@ point_selection:
         cv::imshow(WINDOW_NAME, frame);
     }
 
-    draw_help(frame, "Enter table size to console!");
+    draw_help(frame, HELP_CIN);
     cv:imshow(WINDOW_NAME, frame);
     cv::waitKey(1);
     std::cout << "Enter table width in milimeters: ";
@@ -79,7 +79,7 @@ show_warp:
         get_frame(video, frame);
         cv::warpPerspective(frame, wframe, persp_mat, cv::Size(cdata.table_width, cdata.table_height), cv::INTER_NEAREST);
         cv::resize(wframe, wframe, cv::Size(frame.rows * cdata.table_width / cdata.table_height, frame.rows), cv::INTER_NEAREST);
-        draw_help(wframe, HELP[5]);
+        draw_help(wframe, HELP_RESULT);
         cv::imshow(WINDOW_NAME, wframe);
         int key = cv::waitKey(10);
         if ('r' == key) {
@@ -101,14 +101,6 @@ void mouse_controller(int event, int x, int y, int flags, void* userdata)
         mdata->pos.x = x;
         mdata->pos.y = y;
         mdata->clicked = true;
-    }
-}
-
-void draw_points(cv::Mat& frame, cv::Point2f points[], int count)
-{
-    static const cv::Scalar RED(0, 0, 255);
-    for (int i = 0; i < count; i++) {
-        cv::circle(frame, points[i], 5, RED , cv::FILLED);
     }
 }
 
