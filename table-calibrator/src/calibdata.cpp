@@ -1,10 +1,10 @@
 #include "headers/calibdata.hpp"
 #include <stdio.h>
 
-int CalibData::save() const
+int CalibData::save(const char* path) const
 {
 	FILE* f;
-	if (fopen_s(&f, CALIB_DATA_FILE_PATH, "wb") != 0) {
+	if (fopen_s(&f, path, "wb") != 0) {
 		perror("save:fopen_s");
 		return 0;
 	}
@@ -12,13 +12,13 @@ int CalibData::save() const
 	fclose(f);
 }
 
-int CalibData::load(CalibData* out)
+int CalibData::load(const char* path)
 {
 	FILE* f;
-	if (fopen_s(&f, CALIB_DATA_FILE_PATH, "rb") != 0) {
+	if (fopen_s(&f, path, "rb") != 0) {
 		perror("load:fopen_s");
 		return 0;
 	}
-	fread(out, sizeof(CalibData), 1, f);
+	fread(this, sizeof(CalibData), 1, f);
 	fclose(f);
 }

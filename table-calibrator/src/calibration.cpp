@@ -5,87 +5,88 @@
 #include <iostream>
 
 #define WINDOW_NAME         "Calibration"
-#define HELP_TOP_LEFT       "[LMB] Select top left "
-#define HELP_TOP_RIGHT      "[LMB] Select top right "
-#define HELP_BOT_LEFT       "[LMB] Select bottom left "
-#define HELP_BOT_RIGHT      "[LMB] Select bottom right "
-#define HELP_REST_SELECT    "[R] Restart selection "
-#define HELP_SAVE_QUIT      "[S] Save and quit "
-#define HELP_QUIT           "[Q] Quit "
-#define HELP_LOAD           "[L] Load"
-#define HELP_CONTINUE       "[ENTER] Continue "
-#define HELP_CONSOLE_INPUT  "[CONSOLE] Enter table dimensions "
+#define SAVE_FILE_PATH      "calib-data"
 
 void start_calibration(cv::VideoCapture video)
 {
-    const char* const HELP[6] = { HELP_REST_SELECT HELP_TOP_LEFT, 
-                                  HELP_REST_SELECT HELP_TOP_RIGHT,
-                                  HELP_REST_SELECT HELP_BOT_LEFT, 
-                                  HELP_REST_SELECT HELP_BOT_RIGHT,
-                                  HELP_REST_SELECT HELP_CONTINUE,
-                                  HELP_REST_SELECT HELP_SAVE_QUIT HELP_QUIT};
+    const char* const HELP[7] = { "[R] restart selection  [LMB] select TOP LEFT",
+                                  "[R] restart selection  [LMB] select TOP RIGHT",
+                                  "[R] restart selection  [LMB] select BOTTOM LEFT",
+                                  "[R] restart selection  [LMB] select BOTTOM RIGHT",
+                                  "[R] restart selection  [ENTER] continue",
+                                  "[R] restart selection  [S] save  [Q] quit",
+                                  "[L] load  [ENTER] start calibration" };
 
+    const cv::Scalar RED(0, 0, 255);
+
+    cv::Mat frame;
+    cv::Mat wframe;
+    cv::Mat persp_mat;
     MouseData mdata;
+    CalibData cdata;
+    char selected;
+
     cv::namedWindow(WINDOW_NAME);
     cv::setMouseCallback(WINDOW_NAME, mouse_controller, &mdata);
 
-    cv::Mat frame;
-    cv::Point2f src[4];
-    char selected = 0;
-selection_start:
-    selected = 0;
-    mdata.clicked = false;
-    while (true)
-    {
-
-        if (!video.read(frame)) {
-            continue;
-        }
-
-        if (mdata.clicked && selected < 4) {
-            src[selected++] = mdata.pos;
-            mdata.clicked = false;
-        }
-
-        draw_points(frame, src, selected);
-        draw_help(frame, HELP[selected]);
+main_selection:
+    while (true) {
+        get_frame(video, frame);
+        draw_help(frame, HELP[6]);
         cv::imshow(WINDOW_NAME, frame);
-
         int key = cv::waitKey(10);
-        if ('r' == key) {
-            goto selection_start;
+        if ('l' == key) {
+            cdata.load(SAVE_FILE_PATH);
+            goto show_warp;
         }
-        if (4 == selected && 13 == key) {   // enter
+        if (13 == key) {   // enter
             break;
         }
     }
 
-    float width, height;
-    std::cout << "Enter table width in milimeters: ";   
-    std::cin  >> width;
-    std::cout << "Enter table height in milimeters: ";  
-    std::cin  >> height;
-    cv::Point2f dst[4] = { {0,0}, {width, 0}, {0, height}, {width, height} };
-    const cv::Mat PERSP_MAT = cv::getPerspectiveTransform(src, dst);
+point_selection:
+    mdata.clicked = false;
+    for (int i = 0; i < 4; i++) {
+        draw_help(frame, HELP[i]);
+        cv::imshow(WINDOW_NAME, frame);
+        while (!mdata.clicked) {
+            if ('r' == cv::waitKey(10)) {
+                goto main_selection;
+            }
+        }
+        cdata.src[i] = mdata.pos;
+        mdata.clicked = false;
+        cv::circle(frame, mdata.pos, 5, RED, cv::FILLED);
+        cv::imshow(WINDOW_NAME, frame);
+    }
 
-    cv::Mat wframe;
+    draw_help(frame, "Enter table size to console!");
+    cv:imshow(WINDOW_NAME, frame);
+    cv::waitKey(1);
+    std::cout << "Enter table width in milimeters: ";
+    std::cin >> cdata.table_width;
+    std::cout << "Enter table height in milimeters: ";
+    std::cin >> cdata.table_height;
+    cdata.dst[0] = {0, 0};
+    cdata.dst[1] = { cdata.table_width, 0};
+    cdata.dst[2] = { 0, cdata.table_height };
+    cdata.dst[3] = { cdata.table_width, cdata.table_height };
+
+show_warp:
+    persp_mat = cv::getPerspectiveTransform(cdata.src, cdata.dst);
     while (true)
     {
-        if (!video.read(frame)) {
-            continue;
-        }
-        cv::warpPerspective(frame, wframe, PERSP_MAT, cv::Size(width, height), cv::INTER_NEAREST);
-        cv::resize(wframe, wframe, cv::Size(frame.rows * width / height, frame.rows), cv::INTER_NEAREST);
+        get_frame(video, frame);
+        cv::warpPerspective(frame, wframe, persp_mat, cv::Size(cdata.table_width, cdata.table_height), cv::INTER_NEAREST);
+        cv::resize(wframe, wframe, cv::Size(frame.rows * cdata.table_width / cdata.table_height, frame.rows), cv::INTER_NEAREST);
         draw_help(wframe, HELP[5]);
         cv::imshow(WINDOW_NAME, wframe);
         int key = cv::waitKey(10);
         if ('r' == key) {
-            goto selection_start;
+            goto main_selection;
         }
         if ('s' == key) {
-            CalibData data = { (uint)width, (uint)height, PERSP_MAT };
-            data.save();
-            return;
+            cdata.save(SAVE_FILE_PATH);
         }
         if ('q' == key) {
             return;
@@ -108,6 +109,14 @@ void draw_points(cv::Mat& frame, cv::Point2f points[], int count)
     static const cv::Scalar RED(0, 0, 255);
     for (int i = 0; i < count; i++) {
         cv::circle(frame, points[i], 5, RED , cv::FILLED);
+    }
+}
+
+inline
+void get_frame(cv::VideoCapture& video, cv::Mat& frame)
+{
+    while (!video.read(frame)) {
+        continue;
     }
 }
 

@@ -1,16 +1,15 @@
 #pragma once
-#include <cstdint>
-#include <opencv2/core/mat.hpp>
+#include <opencv2/core/types.hpp>
 
-#define CALIB_DATA_FILE_PATH "calib-data"
+struct CalibData 
+{
+	float table_width  = 0.0f;
+	float table_height = 0.0f;
+	cv::Point2f src[4];
+	cv::Point2f dst[4];
 
-struct CalibData {
-	const uint32_t table_width;
-	const uint32_t table_height;
-	const cv::Mat persp_mat;
+	int save(const char* path) const;
 
-	int save() const;
-
-	int load(CalibData* out);
+	int load(const char* path);
 };
 
