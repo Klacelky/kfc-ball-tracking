@@ -1,4 +1,5 @@
 #include "headers/calibration.hpp"
+#include "headers/calibdata.hpp"
 #include <opencv2/highgui.hpp>
 #include <opencv2/imgproc.hpp>
 #include <iostream>
@@ -11,6 +12,7 @@
 #define HELP_REST_SELECT    "[R] Restart selection "
 #define HELP_SAVE_QUIT      "[S] Save and quit "
 #define HELP_QUIT           "[Q] Quit "
+#define HELP_LOAD           "[L] Load"
 #define HELP_CONTINUE       "[ENTER] Continue "
 #define HELP_CONSOLE_INPUT  "[CONSOLE] Enter table dimensions "
 
@@ -81,7 +83,9 @@ selection_start:
             goto selection_start;
         }
         if ('s' == key) {
-            continue;
+            CalibData data = { (uint)width, (uint)height, PERSP_MAT };
+            data.save();
+            return;
         }
         if ('q' == key) {
             return;
