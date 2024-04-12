@@ -10,6 +10,7 @@ int CalibData::save(const char* path) const
 	}
 	fwrite(this, sizeof(CalibData), 1, f);
 	fclose(f);
+	return 1;
 }
 
 int CalibData::load(const char* path)
@@ -21,4 +22,5 @@ int CalibData::load(const char* path)
 	}
 	fread(this, sizeof(CalibData), 1, f);
 	fclose(f);
+	return 1;
 }
