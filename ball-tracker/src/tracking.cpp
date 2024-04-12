@@ -9,7 +9,12 @@ void tracking_loop(cv::VideoCapture& video)
 {
     cv::Mat frame;
 	cv::Point2f pos_ss, pos_ts;
+	BallPos pos1, pos2;
 	CalibData cdata;
+
+	bool counter_paused = false;
+	uint counter = 0;
+	uint frame_index = 0;
 
 	if (!cdata.load("calib-data")) {
 		return;
@@ -19,25 +24,37 @@ void tracking_loop(cv::VideoCapture& video)
         if (!video.read(frame)) {
             continue;
         }
+		++frame_index;
 
 		#ifdef _DEBUG
 		cv::Mat framecpy = frame.clone();
 		static const cv::Scalar RED(0, 0, 255);
 		#endif 
 
-		if (find_ball(frame, pos_ss)) {
-			
+		if (!find_ball(frame, pos_ss)) {
+			if (counter_paused) {
+				DEBUG_COUT("not found (paused)");
+			}
+			else {
+				DEBUG_COUT("not found (" << counter + 1 << ")");
+				if (++counter >= GOAL_FRAME_COUNT) {
+					counter_paused = true;
+					DEBUG_COUT("\nGOAL\n");
+				}
+			}
+		} else {
 			pos_ts = to_table_space(pos_ss, cdata);
 			if (in_table(pos_ts, cdata)) {
-				DEBUG_COUT(pos_ts);
+				counter_paused = false;
+				counter = 0;
+				pos2 = pos1;
+				pos1 = { pos_ss, pos_ts, frame_index };
+				DEBUG_COUT(pos_ts << " " << frame_index);
 				DEBUG_POINT(framecpy, pos_ss, 5, RED);
 			}
 			else {
 				DEBUG_COUT("outside table");
 			}
-		}
-		else {
-			DEBUG_COUT("not found");
 		}
 		DEBUG_WAIT(5);
         DEBUG_SHOW("Frame", framecpy);

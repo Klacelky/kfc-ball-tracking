@@ -2,6 +2,12 @@
 #include <opencv2/highgui.hpp>
 #include "calibdata.hpp"
 
+struct BallPos {
+	cv::Point2f pos_ss;
+	cv::Point2f pos_ts;
+	uint frame = 0;
+};
+
 void tracking_loop(cv::VideoCapture& video);
 
 bool find_ball(cv::Mat& frame, cv::Point2f& out_pos);
