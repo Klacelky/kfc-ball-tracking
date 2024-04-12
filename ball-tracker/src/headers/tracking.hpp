@@ -6,6 +6,8 @@ struct BallPos {
 	cv::Point2f pos_ss;
 	cv::Point2f pos_ts;
 	uint frame = 0;
+
+	BallPos operator-(const BallPos& other) const;
 };
 
 void tracking_loop(cv::VideoCapture& video);

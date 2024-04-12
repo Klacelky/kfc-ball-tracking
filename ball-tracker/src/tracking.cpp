@@ -9,12 +9,14 @@ void tracking_loop(cv::VideoCapture& video)
 {
     cv::Mat frame;
 	cv::Point2f pos_ss, pos_ts;
-	BallPos pos1, pos2;
+	BallPos last1, last2;
 	CalibData cdata;
 
 	bool counter_paused = false;
 	uint counter = 0;
 	uint frame_index = 0;
+
+	const double FPS = video.get(cv::CAP_PROP_FPS);
 
 	if (!cdata.load("calib-data")) {
 		return;
@@ -29,17 +31,70 @@ void tracking_loop(cv::VideoCapture& video)
 		#ifdef _DEBUG
 		cv::Mat framecpy = frame.clone();
 		static const cv::Scalar RED(0, 0, 255);
+		DEBUG_WAIT(5);
+		DEBUG_COUT("frame " << frame_index << ":");
 		#endif 
+		
+		if (find_ball(frame, pos_ss)) 
+		{	
+			pos_ts = to_table_space(pos_ss, cdata);
+			if (!in_table(pos_ts, cdata)){
+				DEBUG_COUT(" " << last1.pos_ss << " outside table" << std::endl);
+				DEBUG_SHOW("Frame", framecpy);
+				continue;
+			}
+			last2 = last1;
+			last1 = { pos_ss, pos_ts, frame_index };
+			counter = 0;
+			counter_paused = false;
 
-		if (!find_ball(frame, pos_ss)) {
+			DEBUG_COUT(" " << last1.pos_ss << std::endl);
+			DEBUG_POINT(framecpy, pos_ss, 5, RED);
+			DEBUG_SHOW("Frame", framecpy);
+			continue;
+		}
+
+		DEBUG_COUT(" not found");
+		if (counter_paused) 
+		{
+			DEBUG_COUT(" (paused)" << std::endl);
+			DEBUG_LINE(framecpy, last2.pos_ss, last1.pos_ss, RED);
+			DEBUG_SHOW("Frame", framecpy);
+			continue;
+		}
+
+		++counter;
+		DEBUG_COUT(" (" << counter << ")" << std::endl);
+
+		if (counter_paused = counter >= GOAL_FRAME_COUNT) 
+		{
+			auto df = last1 - last2;
+			auto dist = sqrt(df.pos_ts.x * df.pos_ts.x + df.pos_ts.y * df.pos_ts.y);
+			auto time = df.frame / FPS;
+			auto speed = dist / time;	// in [table space unit] per second
+			
+			DEBUG_COUT("\ngoal with speed : " << (int)speed << std::endl);
+			DEBUG_LINE(framecpy, last2.pos_ss, last1.pos_ss, RED);
+			DEBUG_SHOW("Frame", framecpy);
+		}
+	}
+}
+
+		/*if (!find_ball(frame, pos_ss)) {
 			if (counter_paused) {
+				DEBUG_LINE(framecpy, last2.pos_ss, last1.pos_ss, RED);
 				DEBUG_COUT("not found (paused)");
 			}
 			else {
 				DEBUG_COUT("not found (" << counter + 1 << ")");
 				if (++counter >= GOAL_FRAME_COUNT) {
 					counter_paused = true;
-					DEBUG_COUT("\nGOAL\n");
+					BallPos df = last1 - last2;
+					auto dist = sqrt(df.pos_ts.x * df.pos_ts.x + df.pos_ts.y * df.pos_ts.x);
+					double speed = dist / (df.frame / FPS);
+					
+					DEBUG_COUT("\ngoal: " << speed);
+					DEBUG_LINE(framecpy, last2.pos_ss, last1.pos_ss, RED);
 				}
 			}
 		} else {
@@ -47,8 +102,8 @@ void tracking_loop(cv::VideoCapture& video)
 			if (in_table(pos_ts, cdata)) {
 				counter_paused = false;
 				counter = 0;
-				pos2 = pos1;
-				pos1 = { pos_ss, pos_ts, frame_index };
+				last2 = last1;
+				last1 = { pos_ss, pos_ts, frame_index };
 				DEBUG_COUT(pos_ts << " " << frame_index);
 				DEBUG_POINT(framecpy, pos_ss, 5, RED);
 			}
@@ -59,7 +114,7 @@ void tracking_loop(cv::VideoCapture& video)
 		DEBUG_WAIT(5);
         DEBUG_SHOW("Frame", framecpy);
     }
-}
+}*/
 
 bool find_ball(cv::Mat& frame, cv::Point2f& out_pos)
 {
@@ -158,4 +213,11 @@ inline
 bool in_table(const cv::Point2f& p, const CalibData& cdata)
 {
 	return p.x >= 0 && p.y >= 0 && p.x <= cdata.table_width && p.y <= cdata.table_height;
+}
+
+BallPos BallPos::operator-(const BallPos& other) const
+{
+	return { pos_ss - other.pos_ss,
+			 pos_ts - other.pos_ts,
+			 (frame > other.frame) ? frame - other.frame : other.frame - frame };
 }
