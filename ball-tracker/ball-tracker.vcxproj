@@ -10,6 +10,17 @@
       <Platform>x64</Platform>
     </ProjectConfiguration>
   </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\table-calibrator\src\headers\calibdata.hpp" />
+    <ClInclude Include="src\headers\debug.hpp" />
+    <ClInclude Include="src\headers\settings.hpp" />
+    <ClInclude Include="src\headers\tracking.hpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\table-calibrator\src\calibdata.cpp" />
+    <ClCompile Include="src\main.cpp" />
+    <ClCompile Include="src\tracking.cpp" />
+  </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>17.0</VCProjectVersion>
     <Keyword>Win32Proj</Keyword>
@@ -85,9 +96,6 @@
       <AdditionalDependencies>opencv_world490.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
-  <ItemGroup>
-    <ClCompile Include="src\ball-tracker.cpp" />
-  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
