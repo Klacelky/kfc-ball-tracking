@@ -1,13 +1,19 @@
 #include "headers/debug.hpp"
 #include "headers/settings.hpp"
 #include "headers/tracking.hpp"
+#include "calibdata.hpp"
 #include <opencv2/imgproc.hpp>
 #include <opencv2/highgui.hpp>
 
 void tracking_loop(cv::VideoCapture& video)
 {
     cv::Mat frame;
-	cv::Point2f pos;
+	cv::Point2f pos_ss, pos_ts;
+	CalibData cdata;
+
+	if (!cdata.load("calib-data")) {
+		return;
+	}
 
     while (true) {
         if (!video.read(frame)) {
@@ -19,12 +25,19 @@ void tracking_loop(cv::VideoCapture& video)
 		static const cv::Scalar RED(0, 0, 255);
 		#endif 
 
-		if (find_ball(frame, pos)) {
-			std::cout << pos << std::endl;
-			DEBUG_POINT(framecpy, pos, 5, RED);
+		if (find_ball(frame, pos_ss)) {
+			
+			pos_ts = to_table_space(pos_ss, cdata);
+			if (in_table(pos_ts, cdata)) {
+				DEBUG_COUT(pos_ts);
+				DEBUG_POINT(framecpy, pos_ss, 5, RED);
+			}
+			else {
+				DEBUG_COUT("outside table");
+			}
 		}
 		else {
-			std::cout << "null" << std::endl;
+			DEBUG_COUT("not found");
 		}
 		DEBUG_WAIT(5);
         DEBUG_SHOW("Frame", framecpy);
@@ -114,4 +127,18 @@ bool find_ball(cv::Mat& frame, cv::Point2f& out_pos)
 	#endif 
 
 	return true;
+}
+
+cv::Point2f to_table_space(const cv::Point2f& p_ss, const CalibData& cdata)
+{
+	static const cv::Mat persp_mat = cv::getPerspectiveTransform(cdata.src, cdata.dst);
+	cv::Mat p_ts(persp_mat * (cv::Mat_<double>(3, 1) << p_ss.x, p_ss.y, 1.0));
+	double w = p_ts.at<double>(2);
+	return { (float) (p_ts.at<double>(0) / w), (float) (p_ts.at<double>(1) / w)};
+}
+
+inline
+bool in_table(const cv::Point2f& p, const CalibData& cdata)
+{
+	return p.x >= 0 && p.y >= 0 && p.x <= cdata.table_width && p.y <= cdata.table_height;
 }
