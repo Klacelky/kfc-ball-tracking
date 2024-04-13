@@ -43,3 +43,8 @@
 // goal settings
 
 #define GOAL_FRAME_COUNT 25
+
+// netwrok setting
+
+#define IP	 "192.168.0.80"
+#define PORT 8001

@@ -1,9 +1,14 @@
+#pragma comment(lib, "ws2_32.lib")
+
 #include "headers/debug.hpp"
 #include "headers/settings.hpp"
 #include "headers/tracking.hpp"
 #include "calibdata.hpp"
 #include <opencv2/imgproc.hpp>
 #include <opencv2/highgui.hpp>
+
+#include <winsock2.h>
+#include <Ws2tcpip.h>
 
 void tracking_loop(cv::VideoCapture& video)
 {
@@ -21,6 +26,21 @@ void tracking_loop(cv::VideoCapture& video)
 	if (!cdata.load("calib-data")) {
 		return;
 	}
+
+	SOCKET s = socket(AF_INET, SOCK_DGRAM, 0);
+	sockaddr_in addrlisten = {};
+	addrlisten.sin_family = AF_INET;
+	if (bind(s, (sockaddr*)&addrlisten, sizeof(addrlisten)) == -1) {
+		perror("tracking_loop:bind");
+		return;
+	}
+	sockaddr_in addrTarget = {};
+	addrTarget.sin_family = AF_INET;
+	if (!inet_pton(AF_INET, IP, &addrTarget.sin_addr.S_un.S_addr)) {	// IP
+		perror("tracking_loop:inet_pton");
+		return;
+	}
+	addrTarget.sin_port = htons(PORT);				// port
 
     while (true) {
         if (!video.read(frame)) {
@@ -72,6 +92,9 @@ void tracking_loop(cv::VideoCapture& video)
 			auto dist = sqrt(df.pos_ts.x * df.pos_ts.x + df.pos_ts.y * df.pos_ts.y);
 			auto time = df.frame / FPS;
 			auto speed = dist / time;	// in [table space unit] per second
+
+			Shot shot = { last2.pos_ss.x, last2.pos_ss.y, last1.pos_ss.x, last1.pos_ss.y, (uint32_t) speed };
+			sendto(s, (const char*)&shot, sizeof(Shot), 0, (sockaddr*)&addrTarget, sizeof(addrTarget));
 			
 			DEBUG_COUT("\ngoal with speed : " << (int)speed << std::endl);
 			DEBUG_LINE(framecpy, last2.pos_ss, last1.pos_ss, RED);
